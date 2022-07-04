@@ -1,65 +1,77 @@
-import bs4
+import time, sys
 import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from bs4 import BeautifulSoup
-import time
 
-def inf_scroll():
-	SCROLL_PAUSE_TIME = 0.5
+# def inf_scroll():
+# 	print("0")
+# 	reviews = driver.find_elements(By.CLASS_NAME, "jxjCjc")
+# 	prev = 0
+# 	while ((len(reviews) < 50) and (prev!=len(reviews))):
+# 		print("1")
+# 		driver.execute_script("arguments[0].scrollIntoView(true);", reviews[-1])
+# 		time.sleep(1)
+# 		prev = len(reviews)
+# 		reviews = driver.find_elements(By.CLASS_NAME, "jxjCjc")
+# 	return reviews
 
-	# Get scroll height
-	last_height = driver.execute_script("return document.body.scrollHeight")
+def Collect(cat_in):
+	global stars, text, cat
+	reviews = inf_scroll()
+	for i in reviews:
+		# to remove the "... More"
+		try:
+			i.find_element(By.CLASS_NAME, "review-more-link").click()
+		except:
+			pass
 
-	while True:
-	    # Scroll down to bottom
-		driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+		# Collect Star(0-5) Value
+		star = i.find_element(By.CLASS_NAME, "PuaHbe")
+		star = star.find_element(By.TAG_NAME, "span")
+		star = star.get_attribute('aria-label')
+		stars.append(float(star.split()[1]))
 
-	    # Wait to load page
-		time.sleep(SCROLL_PAUSE_TIME)
+		# Collect Textual Review
+		text.append(i.find_element(By.CLASS_NAME, "Jtu6Td").text)
 
-	    # Calculate new scroll height and compare with last scroll height
-		new_height = driver.execute_script("return document.body.scrollHeight")
-		if new_height == last_height:
-			break
-		last_height = new_height
+		# Category
+		cat.append(cat_in)
 
-
+# Loading Google-chrome driver
 driver = webdriver.Chrome(r"/home/rishabh/Desktop/EY/chromedriver")
-# dealer_mas =  input("Enter Dealer Name")
-dealer_mas = 'pasco house plot number 6, old delhi gurgaon road, industrial estate,sector 18, gurugram, haryana, 122015'
-# dealer_mas = "T R SAWHNEY MOTORS PVT. LTD. 9-10 /3 ,LAXMAN HOUSE"
+# Name of the outlet is supposed to be a command line arg
+dealer_mas = sys.argv[1]
 
-url = 'https://www.google.com/search?q={}'.format(dealer_mas + "google maps")
-# url = "https://www.google.com/maps/search?q={}".format(dealer_mas)
-# print(url)
+# URL represetning the required google search
+url = 'https://www.google.com/search?q={}'.format(dealer_mas)
 driver.get(url)
 
-
+# Click on "View all Reviews"
 buttons = driver.find_element(By.CLASS_NAME, "qB0t4").find_element(By.TAG_NAME, "a")
 buttons.click()
-time.sleep(1)
+time.sleep(1) # wait for Loading
 # inf_scroll()
-reviews = driver.find_elements(By.CLASS_NAME, "jxjCjc")
-stars, text = [], []
-for i in reviews:
-	# to remove the "... More"
-	try:
-		i.find_element(By.CLASS_NAME, "review-more-link").click()
-	except:
-		pass
 
-	# Collect Star(0-5) Value
-	star = i.find_element(By.CLASS_NAME, "PuaHbe")
-	star = star.find_element(By.TAG_NAME, "span")
-	star = star.get_attribute('aria-label')
-	stars.append(float(star.split()[1]))
+# Collecting all Reviews
+stars, text, cat = [], [], []
+Collect("Relavent")
 
-	# Collect Actual Review
-	text.append(i.find_element(By.CLASS_NAME, "Jtu6Td").text)
+# Newest
+driver.refresh()
+time.sleep(3)
+# exit(0)
+Sort_By = driver.find_elements(By.CLASS_NAME, "AxAp9e")
+for i in Sort_By:
+	if i.get_attribute('data-sort-id') == "newestFirst" :
+		i.click() #CLick on Newest First
+		time.sleep(1) #wait for loading
+		Collect("Newest")
+		break
 
 driver.close()
-Df = pd.DataFrame([text, stars]).T
-Df.columns=["Text", "Rating"]
-Df.to_csv("Reviews_" + "_".join(dealer_mas.split()) + ".csv")
-print(Df.head())
+
+# Generate DataFrame and save CSV
+Df = pd.DataFrame([text, stars, cat]).T
+Df.columns=["Text", "Rating", "Category"]
+fin_name = dealer_mas.replace("\\", "").replace("/", "")
+Df.to_csv("output/" + "_".join(fin_name.split()) + ".csv")
