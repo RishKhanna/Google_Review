@@ -3,17 +3,19 @@ import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
-# def inf_scroll():
-# 	print("0")
-# 	reviews = driver.find_elements(By.CLASS_NAME, "jxjCjc")
-# 	prev = 0
-# 	while ((len(reviews) < 50) and (prev!=len(reviews))):
-# 		print("1")
-# 		driver.execute_script("arguments[0].scrollIntoView(true);", reviews[-1])
-# 		time.sleep(1)
-# 		prev = len(reviews)
-# 		reviews = driver.find_elements(By.CLASS_NAME, "jxjCjc")
-# 	return reviews
+total_count = 35 
+
+def inf_scroll():
+	print("0")
+	reviews = driver.find_elements(By.CLASS_NAME, "jxjCjc")
+ 	prev = 0
+ 	while ((len(reviews) < total_count) and (prev!=len(reviews))):
+ 		print("1")
+ 		driver.execute_script("arguments[0].scrollIntoView(true);", reviews[-1])
+ 		time.sleep(1)
+ 		prev = len(reviews)
+ 		reviews = driver.find_elements(By.CLASS_NAME, "jxjCjc")
+ 	return reviews
 
 def Collect(cat_in):
 	global stars, text, cat
@@ -36,6 +38,14 @@ def Collect(cat_in):
 
 		# Category
 		cat.append(cat_in)
+		if cat_in == "Relevent":
+			text =text[ :total_count]
+			cat = cat[ :total_count]
+			stars = stars[ :total_count]
+		else: 
+			text =text[ :2*total_count]
+			cat = cat[ :2*total_count]
+			stars = stars[ :2*total_count]
 
 # Loading Google-chrome driver
 driver = webdriver.Chrome(r"/home/rishabh/Desktop/EY/chromedriver")
